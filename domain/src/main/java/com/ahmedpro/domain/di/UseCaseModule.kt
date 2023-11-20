@@ -19,6 +19,10 @@ object UseCaseModule {
         weatherUseCases.getCurrentWeatherUseCase
 
     @Provides
+    fun providesGetHourlyWeatherListUseCase(weatherUseCases: WeatherUseCases): WeatherUseCases.GetHourlyWeatherListUseCase =
+        weatherUseCases.getHourlyWeatherListUseCase
+
+    @Provides
     fun providesGetCachedWeatherUseCase(weatherUseCases: WeatherUseCases): WeatherUseCases.GetCachedWeatherUseCase =
         weatherUseCases.getCachedWeatherUseCase
 

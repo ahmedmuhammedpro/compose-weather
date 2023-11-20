@@ -2,15 +2,14 @@ package com.ahmedpro.domain.usecase
 
 import com.ahmedpro.domain.base.AsyncUseCase
 import com.ahmedpro.domain.base.Result
-import com.ahmedpro.domain.repository.WeatherRepository
+import com.ahmedpro.domain.model.HourlyWeatherList
 import com.ahmedpro.domain.model.WeatherData
+import com.ahmedpro.domain.repository.WeatherRepository
 import com.ahmedpro.domain.utils.TempType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
 import javax.inject.Inject
 
@@ -24,6 +23,19 @@ class WeatherUseCases @Inject constructor(private val weatherRepository: Weather
         override suspend fun doWork(params: Params): Flow<Result<WeatherData>> {
             return flow {
                 val result = weatherRepository.getCurrentWeather(params.lat, params.lon)
+                emit(result)
+            }.flowOn(Dispatchers.IO).onStart { Result.Loading }
+        }
+    }
+
+    class GetHourlyWeatherListUseCase internal constructor(
+        private val weatherRepository: WeatherRepository
+    ) : AsyncUseCase.RequestUseCaseParameters<GetHourlyWeatherListUseCase.Params, Flow<Result<HourlyWeatherList>>> {
+        data class Params(val lat: Float, val lon: Float)
+
+        override suspend fun doWork(params: Params): Flow<Result<HourlyWeatherList>> {
+            return flow {
+                val result = weatherRepository.getHourlyWeatherList(params.lat, params.lon)
                 emit(result)
             }.flowOn(Dispatchers.IO).onStart { Result.Loading }
         }
@@ -71,6 +83,10 @@ class WeatherUseCases @Inject constructor(private val weatherRepository: Weather
 
     val getCurrentWeatherUseCase by lazy {
         GetCurrentWeatherUseCase(weatherRepository = weatherRepository)
+    }
+
+    val getHourlyWeatherListUseCase by lazy {
+        GetHourlyWeatherListUseCase(weatherRepository = weatherRepository)
     }
 
     val getCachedWeatherUseCase by lazy {

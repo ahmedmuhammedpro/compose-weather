@@ -37,8 +37,8 @@ class PrefStoreImpl @Inject constructor(
 
     override val tempType: Flow<TempType> = dataStore.data.map { prefs ->
         val type = prefs[KEY_PREF_TEMP_TYPE]
-        if (type == TempType.CELSIUS.name) TempType.CELSIUS
-        else TempType.FAHRENHEIT
+        if (type == TempType.FAHRENHEIT.name) TempType.FAHRENHEIT
+        else TempType.CELSIUS
     }
     override val cachedWeatherData: Flow<WeatherData> = dataStore.data.map { prefs ->
         gson.fromJson(prefs[KEY_PREF_CACHED_WEATHER_DATA], weatherDataType)

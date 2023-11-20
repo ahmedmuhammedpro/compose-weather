@@ -4,13 +4,17 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmedpro.domain.base.Result
+import com.ahmedpro.domain.model.HourlyData
+import com.ahmedpro.domain.model.HourlyWeatherList
 import com.ahmedpro.domain.model.LatLang
-import com.ahmedpro.domain.model.Main
 import com.ahmedpro.domain.model.WeatherData
 import com.ahmedpro.domain.usecase.WeatherUseCases
 import com.ahmedpro.domain.utils.TempType
+import com.ahmedpro.domain.utils.celsiusToFahrenheit
 import com.ahmedpro.domain.utils.convertFromCelsiusToFahrenheit
 import com.ahmedpro.domain.utils.convertFromFahrenheitToCelsius
+import com.ahmedpro.domain.utils.fahrenheitToCelsius
+import com.ahmedpro.weathercompose.util.LocationUpdateCallback
 import com.ahmedpro.weathercompose.util.UserLocation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -25,6 +29,7 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     private val userLocation: UserLocation,
     private val getCurrentWeatherUseCase: WeatherUseCases.GetCurrentWeatherUseCase,
+    private val getHourlyWeatherListUseCase: WeatherUseCases.GetHourlyWeatherListUseCase,
     private val getCachedWeatherUseCase: WeatherUseCases.GetCachedWeatherUseCase,
     private val getTempTypeUseCase: WeatherUseCases.GetTempTypeUseCase,
     private val getUseDefaultBackgroundUseCase: WeatherUseCases.GetUseDefaultBackgroundUseCase,
@@ -47,22 +52,38 @@ class HomeViewModel @Inject constructor(
     private val _useDefaultBackground = MutableStateFlow(true)
     val useDefaultBackground: StateFlow<Boolean> = _useDefaultBackground
 
+    private val _locationAvailabilityState = MutableStateFlow<Boolean?>(null)
+    val locationAvailabilityState: StateFlow<Boolean?> = _locationAvailabilityState
+
     private val _currentWeatherState = MutableStateFlow<WeatherData?>(null)
     val currentWeatherState: StateFlow<WeatherData?> = _currentWeatherState
 
+    private val _hourlyWeatherListState = MutableStateFlow<HourlyWeatherList?>(null)
+    val hourlyWeatherListState: StateFlow<HourlyWeatherList?> = _hourlyWeatherListState
+
     init {
         viewModelScope.launch {
+            val cachedWeatherData = getCachedWeatherUseCase()
             _tempType.value = getTempTypeUseCase()
             _useDefaultBackground.value = getUseDefaultBackgroundUseCase()
-            _currentWeatherState.value = getCachedWeatherUseCase()
+            _currentWeatherState.value = cachedWeatherData
+            _currentLocationState.value =
+                if (cachedWeatherData != null) LatLang(cachedWeatherData.coord.lat, cachedWeatherData.coord.lon)
+                else null
         }
     }
 
     fun getUserLocation() {
         viewModelScope.launch {
-            userLocation.getUserLocation {
-                _currentLocationState.value = it
-            }
+            userLocation.getUserLocation(object : LocationUpdateCallback {
+                override fun onLocationReceived(latLang: LatLang) {
+                    _currentLocationState.value = latLang
+                }
+
+                override fun onLocationAvailabilityChange(isAvailable: Boolean) {
+                    _locationAvailabilityState.value = isAvailable
+                }
+            })
         }
     }
 
@@ -88,6 +109,14 @@ class HomeViewModel @Inject constructor(
                     }
                 }
 
+                getHourlyWeatherListUseCase(
+                    WeatherUseCases.GetHourlyWeatherListUseCase.Params(lat.toFloat(), lang.toFloat())
+                ).collect {
+                    if (it is Result.Success) {
+                        _hourlyWeatherListState.value = it.data
+                    }
+                }
+
                 delay(TimeUnit.MINUTES.toMillis(1))
             }
         }
@@ -102,6 +131,21 @@ class HomeViewModel @Inject constructor(
                 if (tempType == TempType.CELSIUS) main!!.convertFromFahrenheitToCelsius()
                 else main!!.convertFromCelsiusToFahrenheit()
             )
+
+            val hourlyHourlyDateList = mutableListOf<HourlyData>()
+            _hourlyWeatherListState.value?.hourly?.forEach {
+                val newItem = it.copy(
+                    temp =
+                    if (tempType == TempType.FAHRENHEIT) it.temp.celsiusToFahrenheit()
+                    else it.temp.fahrenheitToCelsius()
+                )
+                hourlyHourlyDateList.add(newItem)
+            }
+
+            _hourlyWeatherListState.value = _hourlyWeatherListState.value?.copy(
+                hourly = hourlyHourlyDateList
+            )
+
             saveTempTypeUseCase(tempType)
         }
     }

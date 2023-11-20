@@ -64,14 +64,17 @@ fun ErrorDialog(
             ) {
                 Text(
                     text = message,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 16.sp,
                     color = Color.Black
                 )
                 Button(
                     modifier = Modifier.padding(top = 32.dp),
                     colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF81D4FA)),
-                    onClick = onRetry,
+                    onClick = {
+                        onRetry.invoke()
+                        onDismiss.invoke()
+                    },
                 ) {
                     Text("Retry", color = Color.Black)
                 }

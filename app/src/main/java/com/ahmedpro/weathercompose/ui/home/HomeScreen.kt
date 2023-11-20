@@ -1,19 +1,13 @@
 package com.ahmedpro.weathercompose.ui.home
 
 import android.annotation.SuppressLint
-import android.content.Context
-import android.location.GnssStatus
-import android.location.GpsStatus
-import android.location.LocationManager
 import android.net.Uri
-import android.os.Handler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -35,6 +29,7 @@ import com.ahmedpro.weathercompose.util.formatDate
 import com.ahmedpro.weathercompose.util.getAllImagesUris
 import com.ahmedpro.weathercompose.util.getFileDate
 import com.ahmedpro.weathercompose.util.getWeatherLottieRes
+import com.ahmedpro.weathercompose.util.requestEnableLocation
 import kotlinx.coroutines.launch
 
 @SuppressLint("MissingPermission")
@@ -56,26 +51,15 @@ fun HomeScreen(homeViewModel: HomeViewModel = hiltViewModel()) {
         var shouldGetBackgroundImageUri by remember { mutableStateOf(false) }
         var backgroundImageUri by remember { mutableStateOf<Uri?>(null) }
         var backgroundImageDate by remember { mutableStateOf<String?>(null) }
-        val locationManager by remember {
-            val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-            mutableStateOf(lm)
-        }
-        val gpsStatusListener  by remember {
-            val gsl = object : GnssStatus.Callback() {
-                override fun onSatelliteStatusChanged(status: GnssStatus) {
-                    val x = status.satelliteCount
-                    val y = 0
-                }
-            }
-            mutableStateOf(gsl)
-        }
 
         val currentLocation by homeViewModel.currentLocationState.collectAsState(null)
         val isLoading by homeViewModel.isLoadingState.collectAsState()
         val errorMessage by homeViewModel.errorMessageState.collectAsState()
         val currentWeather by homeViewModel.currentWeatherState.collectAsState()
+        val hourlyWeatherList by homeViewModel.hourlyWeatherListState.collectAsState()
         val tempType by homeViewModel.tempSymbol.collectAsState()
         val useDefaultBackground by homeViewModel.useDefaultBackground.collectAsState()
+        val isLocationEnabled by homeViewModel.locationAvailabilityState.collectAsState()
 
         val cameraLauncher = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.TakePicture(),
@@ -84,7 +68,7 @@ fun HomeScreen(homeViewModel: HomeViewModel = hiltViewModel()) {
             }
         )
 
-        LaunchedEffect(locationPermissionGranted) {
+        LaunchedEffect(locationPermissionGranted, isLocationEnabled) {
             if (locationPermissionGranted) {
                 homeViewModel.getUserLocation()
             }
@@ -133,43 +117,42 @@ fun HomeScreen(homeViewModel: HomeViewModel = hiltViewModel()) {
             )
         }
 
-        DisposableEffect(locationPermissionGranted) {
-            if (locationPermissionGranted) {
-                locationManager.registerGnssStatusCallback(gpsStatusListener, Handler(context.mainLooper))
-            }
-            onDispose {
-                if (locationPermissionGranted) locationManager.unregisterGnssStatusCallback(gpsStatusListener)
-            }
-        }
-
         HomeScreenContent(
             isLoading = isLoading,
-            isLocationEnable = locationPermissionGranted,
+            isLocationEnable = isLocationEnabled ?: false,
             backgroundImageUri = backgroundImageUri,
             backgroundImageDate = backgroundImageDate,
             weatherData = currentWeather,
+            hourlyWeatherList = hourlyWeatherList,
             lottieCompositionSpec = getWeatherLottieRes(currentWeather),
             onSettingClick = { showSettingsDialog = true },
-            onRetry = { homeViewModel.getCurrentWeather(currentLocation?.lat ?: 0.0, currentLocation?.lang ?: 0.0) },
+            onEnableLocationClick = { context.requestEnableLocation() },
+            onRetry = {
+                if (currentLocation != null)
+                    homeViewModel.getCurrentWeather(currentLocation!!.lat, currentLocation!!.lang)
+            },
         )
 
         SettingsDialog(
             visible = showSettingsDialog,
             tempTypeName = if (tempType == TempType.CELSIUS) "Fahrenheit" else "Celsius",
+            onDismiss = { showSettingsDialog = false },
             onTakePicClick = {
                 val photoUri = createImageUri(context)
                 cameraLauncher.launch(photoUri)
             },
             onRestBackground = { homeViewModel.saveUseDefaultBackground(true) },
             onChangeTempTypeClick = { homeViewModel.saveTempType(if (tempType == TempType.CELSIUS) TempType.FAHRENHEIT else TempType.CELSIUS) },
-            onDismiss = { showSettingsDialog = false },
         )
 
         ErrorDialog(
             visible = showErrorDialog,
             message = errorMessage ?: "",
-            onRetry = { homeViewModel.getCurrentWeather(currentLocation?.lat ?: 0.0, currentLocation?.lang ?: 0.0) },
-            onDismiss = { showErrorDialog = false }
+            onDismiss = { showErrorDialog = false },
+            onRetry = {
+                if (currentLocation != null)
+                    homeViewModel.getCurrentWeather(currentLocation!!.lat, currentLocation!!.lang)
+            }
         )
     }
 }

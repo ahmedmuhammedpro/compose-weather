@@ -1,11 +1,13 @@
 package com.ahmedpro.domain.repository
 
 import com.ahmedpro.domain.base.Result
+import com.ahmedpro.domain.model.HourlyWeatherList
 import com.ahmedpro.domain.model.WeatherData
 import com.ahmedpro.domain.utils.TempType
 
 interface WeatherRepository {
     suspend fun getCurrentWeather(lat: Float, lon: Float): Result<WeatherData>
+    suspend fun getHourlyWeatherList(lat: Float, lon: Float): Result<HourlyWeatherList>
     suspend fun getCachedWeather(): WeatherData?
     suspend fun getTempType(): TempType
     suspend fun useDefaultBackground(): Boolean

@@ -2,6 +2,8 @@ package com.ahmedpro.domain.utils
 
 import com.ahmedpro.domain.model.Clouds
 import com.ahmedpro.domain.model.Coord
+import com.ahmedpro.domain.model.HourlyData
+import com.ahmedpro.domain.model.HourlyWeatherList
 import com.ahmedpro.domain.model.Main
 import com.ahmedpro.domain.model.Rain
 import com.ahmedpro.domain.model.Sys
@@ -10,6 +12,8 @@ import com.ahmedpro.domain.model.WeatherData
 import com.ahmedpro.domain.model.Wind
 import com.ahmedpro.domain.remote.model.CloudsResponse
 import com.ahmedpro.domain.remote.model.CoordResponse
+import com.ahmedpro.domain.remote.model.HourlyDataResponse
+import com.ahmedpro.domain.remote.model.HourlyWeatherListResponse
 import com.ahmedpro.domain.remote.model.MainResponse
 import com.ahmedpro.domain.remote.model.RainResponse
 import com.ahmedpro.domain.remote.model.SysResponse
@@ -47,6 +51,20 @@ fun MainResponse.toMain() = Main(
     humidity = humidity,
     seaLevel = seaLevel,
     grndLevel = grndLevel
+)
+
+fun HourlyWeatherListResponse.toHourlyWeatherList() = HourlyWeatherList(
+    lat = lat,
+    lon = lon,
+    timezone = timezone,
+    timezoneOffset = timezoneOffset,
+    hourly = hourly.map { it.toHourlyDate() }
+)
+
+fun HourlyDataResponse.toHourlyDate() = HourlyData(
+    temp = temp,
+    dt = dt,
+    weather = weather.map { it.toWeather() }
 )
 
 fun Main.convertFromKelvinToCelsius() = this.copy(

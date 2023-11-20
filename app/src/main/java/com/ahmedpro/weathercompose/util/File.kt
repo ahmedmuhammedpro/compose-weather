@@ -10,6 +10,7 @@ import java.util.Date
 import java.util.Locale
 
 const val WEATHER_DIR = "ComposeWeather"
+const val IMAGE_URL = "https://openweathermap.org/img/w/"
 
 fun createImageUri(context: Context): Uri? {
     val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
