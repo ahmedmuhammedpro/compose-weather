@@ -128,8 +128,8 @@ class HomeViewModel @Inject constructor(
             val main = _currentWeatherState.value?.main
             _currentWeatherState.value = _currentWeatherState.value?.copy(
                 main =
-                if (tempType == TempType.CELSIUS) main!!.convertFromFahrenheitToCelsius()
-                else main!!.convertFromCelsiusToFahrenheit()
+                if (tempType == TempType.FAHRENHEIT) main!!.convertFromCelsiusToFahrenheit()
+                else main!!.convertFromFahrenheitToCelsius()
             )
 
             val hourlyHourlyDateList = mutableListOf<HourlyData>()

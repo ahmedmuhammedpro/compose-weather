@@ -99,7 +99,7 @@ fun HomeScreen(homeViewModel: HomeViewModel = hiltViewModel()) {
             if (shouldGetBackgroundImageUri) {
                 coroutineScope.launch {
                     val uriList = getAllImagesUris(context)
-                    backgroundImageUri = uriList.lastOrNull()
+                    backgroundImageUri = uriList.firstOrNull()
                 }
                 shouldGetBackgroundImageUri = false
                 homeViewModel.saveUseDefaultBackground(false)

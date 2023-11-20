@@ -160,7 +160,7 @@ fun HourlyWeatherListCard(
 
                     Text(
                         modifier = Modifier.padding(top = 18.dp),
-                        text = "${item.temp.toInt()}",
+                        text = "${item.temp.toInt()}°",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium,
                         color = Color.Black

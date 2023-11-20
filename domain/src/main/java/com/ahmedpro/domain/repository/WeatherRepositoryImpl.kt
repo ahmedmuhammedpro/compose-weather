@@ -31,7 +31,7 @@ class WeatherRepositoryImpl @Inject constructor(
                 val tempType = prefStore.tempType.firstOrNull()
                 val convertedTemps =
                     if (tempType == TempType.FAHRENHEIT) {
-                        weatherDataResult.toWeatherData().main.convertFromKelvinToCelsius()
+                        weatherDataResult.toWeatherData().main.convertFromKelvinToFahrenheit()
                     } else {
                         weatherDataResult.toWeatherData().main.convertFromKelvinToCelsius()
                     }
